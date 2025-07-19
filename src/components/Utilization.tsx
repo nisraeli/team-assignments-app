@@ -4,7 +4,7 @@ import { BarChart3, Clock, TrendingUp, TrendingDown } from 'lucide-react';
 import { format, startOfWeek, addDays } from 'date-fns';
 
 function Utilization() {
-  const { teamMembers, getUtilization, getMemberAssignments } = useData();
+  const { teamMembers, teams, getUtilization, getMemberAllocations } = useData();
   const utilizationData = getUtilization();
 
   const getUtilizationColor = (percentage: number) => {
@@ -84,7 +84,8 @@ function Utilization() {
       <div className="grid grid-2">
         {utilizationData.map((util: any) => {
           const member = teamMembers.find((m: any) => m.id === util.memberId);
-          const memberAssignments = getMemberAssignments(util.memberId);
+          const memberTeam = teams.find((t: any) => t.id === member?.teamId);
+          const memberAllocations = getMemberAllocations(util.memberId);
           const utilizationColor = getUtilizationColor(util.utilizationPercentage);
           const utilizationStatus = getUtilizationStatus(util.utilizationPercentage);
           const UtilizationIcon = getUtilizationIcon(util.utilizationPercentage);
@@ -99,13 +100,33 @@ function Utilization() {
                   >
                     {member?.name.split(' ').map((n: string) => n[0]).join('') || '?'}
                   </div>
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b', marginBottom: '0.25rem' }}>
                       {member?.name || 'Unknown'}
                     </h3>
-                    <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
-                      {member?.role || 'No role'} • {member?.department || 'No department'}
-                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                        {member?.role || 'No role'}
+                      </p>
+                      {memberTeam && (
+                        <>
+                          <span style={{ color: '#e2e8f0' }}>•</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <div 
+                              style={{ 
+                                width: '0.75rem', 
+                                height: '0.75rem', 
+                                borderRadius: '0.125rem', 
+                                backgroundColor: memberTeam.color 
+                              }}
+                            />
+                            <span style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                              {memberTeam.name}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -139,18 +160,18 @@ function Utilization() {
 
               <div>
                 <h4 style={{ fontSize: '0.875rem', fontWeight: '600', color: '#1e293b', marginBottom: '0.75rem' }}>
-                  Current Assignments ({memberAssignments.length})
+                  Current Allocations ({memberAllocations.length})
                 </h4>
                 
-                {memberAssignments.length === 0 ? (
+                {memberAllocations.length === 0 ? (
                   <p style={{ fontSize: '0.875rem', color: '#94a3b8', textAlign: 'center', padding: '1rem' }}>
-                    No active assignments
+                    No active allocations
                   </p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {memberAssignments.slice(0, 3).map((assignment: any) => (
+                    {memberAllocations.slice(0, 3).map((allocation: any) => (
                       <div 
-                        key={assignment.id} 
+                        key={allocation.id} 
                         style={{ 
                           padding: '0.75rem', 
                           backgroundColor: '#f8fafc', 
@@ -160,46 +181,59 @@ function Utilization() {
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.25rem' }}>
                           <span style={{ fontSize: '0.75rem', fontWeight: '500', color: '#1e293b' }}>
-                            {assignment.title}
+                            {allocation.title}
                           </span>
-                          <span className={`badge badge-${assignment.status}`} style={{ fontSize: '0.65rem' }}>
-                            {assignment.status}
+                          <span className={`badge badge-${allocation.status.replace('-', '')}`} style={{ fontSize: '0.65rem' }}>
+                            {allocation.status}
                           </span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#64748b' }}>
-                          <span>Due: {format(new Date(assignment.dueDate), 'MMM dd')}</span>
-                          <span>{assignment.actualHours}h / {assignment.estimatedHours}h</span>
+                          <span>Due: {format(new Date(allocation.endDate), 'MMM dd')}</span>
+                          <span>{allocation.actualHours}h / {allocation.estimatedHours}h</span>
                         </div>
+                        {allocation.projectCode && (
+                          <div style={{ marginTop: '0.25rem' }}>
+                            <span style={{ 
+                              fontSize: '0.65rem', 
+                              backgroundColor: '#f0f9ff', 
+                              color: '#1d4ed8',
+                              padding: '0.125rem 0.375rem',
+                              borderRadius: '0.25rem'
+                            }}>
+                              {allocation.projectCode}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     ))}
                     
-                    {memberAssignments.length > 3 && (
+                    {memberAllocations.length > 3 && (
                       <p style={{ fontSize: '0.75rem', color: '#64748b', textAlign: 'center', marginTop: '0.5rem' }}>
-                        +{memberAssignments.length - 3} more assignments
+                        +{memberAllocations.length - 3} more allocations
                       </p>
                     )}
                   </div>
                 )}
               </div>
 
-              {util.assignments.length > 0 && (
+              {util.allocations.length > 0 && (
                 <div style={{ marginTop: '1rem' }}>
                   <h4 style={{ fontSize: '0.875rem', fontWeight: '600', color: '#1e293b', marginBottom: '0.75rem' }}>
                     Time Distribution
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {util.assignments.map((assignmentTime: any) => {
-                      const assignment = memberAssignments.find((a: any) => a.id === assignmentTime.assignmentId);
-                      const percentage = (assignmentTime.hours / util.totalHours) * 100;
+                    {util.allocations.map((allocationTime: any) => {
+                      const allocation = memberAllocations.find((a: any) => a.id === allocationTime.allocationId);
+                      const percentage = (allocationTime.hours / util.totalHours) * 100;
                       
                       return (
-                        <div key={assignmentTime.assignmentId} style={{ fontSize: '0.75rem' }}>
+                        <div key={allocationTime.allocationId} style={{ fontSize: '0.75rem' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
                             <span style={{ color: '#64748b' }}>
-                              {assignment?.title || 'Unknown Assignment'}
+                              {allocation?.title || 'Unknown Allocation'}
                             </span>
                             <span style={{ color: '#1e293b', fontWeight: '500' }}>
-                              {assignmentTime.hours}h ({Math.round(percentage)}%)
+                              {allocationTime.hours}h ({Math.round(percentage)}%)
                             </span>
                           </div>
                           <div style={{ 
@@ -234,7 +268,7 @@ function Utilization() {
           <BarChart3 size={48} style={{ color: '#cbd5e1', margin: '0 auto 1rem' }} />
           <h3 style={{ color: '#64748b', marginBottom: '0.5rem' }}>No utilization data</h3>
           <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>
-            Add team members and assignments to see utilization metrics
+            Add team members and project allocations to see utilization metrics
           </p>
         </div>
       )}

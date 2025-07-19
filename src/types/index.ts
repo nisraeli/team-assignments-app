@@ -1,3 +1,22 @@
+export interface User {
+  id: string;
+  email: string;
+  password: string;
+  isInvited: boolean;
+  invitedAt?: Date;
+  lastLogin?: Date;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  description: string;
+  teamLeadId: string;
+  memberIds: string[];
+  color: string;
+  createdDate: Date;
+}
+
 export interface TeamMember {
   id: string;
   name: string;
@@ -7,26 +26,31 @@ export interface TeamMember {
   capacity: number; // hours per week
   skills: string[];
   avatarColor: string;
+  teamId?: string;
+  isTeamLead: boolean;
 }
 
-export interface Assignment {
+export interface ProjectAllocation {
   id: string;
   title: string;
   description: string;
+  teamId: string;
   assigneeId: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
-  status: 'todo' | 'in-progress' | 'review' | 'completed';
+  status: 'planning' | 'in-progress' | 'review' | 'completed' | 'on-hold';
   estimatedHours: number;
   actualHours: number;
-  dueDate: Date;
+  startDate: Date;
+  endDate: Date;
   createdDate: Date;
   tags: string[];
-  project?: string;
+  projectCode?: string;
+  budget?: number;
 }
 
 export interface TimeEntry {
   id: string;
-  assignmentId: string;
+  allocationId: string;
   memberId: string;
   hours: number;
   date: Date;
@@ -39,10 +63,16 @@ export interface Utilization {
   totalHours: number;
   capacityHours: number;
   utilizationPercentage: number;
-  assignments: {
-    assignmentId: string;
+  allocations: {
+    allocationId: string;
     hours: number;
   }[];
 }
 
-export type ViewType = 'dashboard' | 'team' | 'assignments' | 'utilization'; 
+export interface AuthState {
+  isAuthenticated: boolean;
+  currentUser: User | null;
+  pendingInvitations: string[];
+}
+
+export type ViewType = 'dashboard' | 'teams' | 'allocations' | 'utilization' | 'team-management'; 
