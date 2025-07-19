@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { TeamMember, Team } from '../types';
-import { Plus, Edit, Trash2, Mail, User, Crown, UserPlus } from 'lucide-react';
+import { Plus, Edit, Trash2, Mail, User, Crown, UserPlus, Shield, Settings } from 'lucide-react';
 
 function TeamManagement() {
-  const { teamMembers, teams, addTeamMember, updateTeamMember, deleteTeamMember, getTeamMembers } = useData();
-  const { sendInvitation, currentUser } = useAuth();
+  const { teamMembers, teams, addTeamMember, updateTeamMember, deleteTeamMember } = useData();
+  const { sendInvitation, currentUser, makeUserAdmin, removeUserAdmin, getAllUsers } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -101,7 +102,20 @@ function TeamManagement() {
     resetForm();
   };
 
-  const isAdmin = currentUser?.email === 'admin@company.com';
+  const handleToggleAdmin = (userId: string, isCurrentlyAdmin: boolean) => {
+    if (isCurrentlyAdmin) {
+      if (window.confirm('Are you sure you want to remove admin privileges from this user?')) {
+        removeUserAdmin(userId);
+      }
+    } else {
+      if (window.confirm('Are you sure you want to grant admin privileges to this user?')) {
+        makeUserAdmin(userId);
+      }
+    }
+  };
+
+  const isAdmin = currentUser?.isAdmin || false;
+  const allUsers = getAllUsers();
 
   return (
     <div>
@@ -117,13 +131,22 @@ function TeamManagement() {
           </div>
           <div style={{ display: 'flex', gap: '1rem' }}>
             {isAdmin && (
-              <button 
-                className="btn btn-secondary"
-                onClick={() => setShowInviteModal(true)}
-              >
-                <UserPlus size={16} />
-                Send Invitation
-              </button>
+              <>
+                <button 
+                  className="btn btn-secondary"
+                  onClick={() => setShowAdminModal(true)}
+                >
+                  <Shield size={16} />
+                  Manage Admins
+                </button>
+                <button 
+                  className="btn btn-secondary"
+                  onClick={() => setShowInviteModal(true)}
+                >
+                  <UserPlus size={16} />
+                  Send Invitation
+                </button>
+              </>
             )}
             <button 
               className="btn btn-primary"
@@ -139,6 +162,7 @@ function TeamManagement() {
       <div className="grid grid-3">
         {teamMembers.map((member: TeamMember) => {
           const memberTeam = teams.find((t: Team) => t.id === member.teamId);
+          const memberUser = allUsers.find(u => u.email === member.email);
           
           return (
             <div key={member.id} className="team-member-card">
@@ -152,14 +176,24 @@ function TeamManagement() {
                 <div className="team-member-info">
                   <h3>{member.name}</h3>
                   <p>{member.role}</p>
-                  {member.isTeamLead && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
-                      <Crown size={14} style={{ color: '#eab308' }} />
-                      <span style={{ fontSize: '0.75rem', color: '#eab308', fontWeight: '500' }}>
-                        Team Lead
-                      </span>
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
+                    {member.isTeamLead && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <Crown size={14} style={{ color: '#eab308' }} />
+                        <span style={{ fontSize: '0.75rem', color: '#eab308', fontWeight: '500' }}>
+                          Team Lead
+                        </span>
+                      </div>
+                    )}
+                    {memberUser?.isAdmin && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <Shield size={14} style={{ color: '#ef4444' }} />
+                        <span style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: '500' }}>
+                          Admin
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               
@@ -420,6 +454,69 @@ function TeamManagement() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Management Modal */}
+      {showAdminModal && (
+        <div className="modal-overlay" onClick={() => setShowAdminModal(false)}>
+          <div className="modal" onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h2 className="modal-title">
+                <Shield size={20} style={{ marginRight: '0.5rem' }} />
+                Manage Admin Users
+              </h2>
+              <button className="modal-close" onClick={() => setShowAdminModal(false)}>
+                ×
+              </button>
+            </div>
+
+            <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              {allUsers.map((user) => (
+                <div key={user.id} style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  padding: '1rem',
+                  borderBottom: '1px solid #e2e8f0'
+                }}>
+                  <div>
+                    <div style={{ fontWeight: '500', color: '#1e293b' }}>
+                      {user.email}
+                    </div>
+                    <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                      {user.isAdmin ? 'Administrator' : 'Regular User'}
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {user.isAdmin && (
+                      <Shield size={16} style={{ color: '#ef4444' }} />
+                    )}
+                    {user.id !== currentUser?.id && (
+                      <button
+                        className={`btn btn-sm ${user.isAdmin ? 'btn-danger' : 'btn-primary'}`}
+                        onClick={() => handleToggleAdmin(user.id, user.isAdmin)}
+                      >
+                        {user.isAdmin ? 'Remove Admin' : 'Make Admin'}
+                      </button>
+                    )}
+                    {user.id === currentUser?.id && (
+                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                        (You)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={() => setShowAdminModal(false)}>
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

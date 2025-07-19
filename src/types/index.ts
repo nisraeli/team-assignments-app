@@ -3,6 +3,7 @@ export interface User {
   email: string;
   password: string;
   isInvited: boolean;
+  isAdmin: boolean;
   invitedAt?: Date;
   lastLogin?: Date;
 }

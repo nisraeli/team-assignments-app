@@ -110,24 +110,6 @@ function Login({ onRegisterClick }: LoginProps) {
             Create Account
           </button>
         </div>
-
-        <div style={{ 
-          marginTop: '1.5rem', 
-          padding: '1rem', 
-          backgroundColor: '#f8fafc', 
-          borderRadius: '0.5rem',
-          border: '1px solid #e2e8f0'
-        }}>
-          <h3 style={{ fontSize: '0.875rem', fontWeight: '600', color: '#1e293b', marginBottom: '0.5rem' }}>
-            Demo Credentials:
-          </h3>
-          <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0.25rem 0' }}>
-            Email: admin@company.com
-          </p>
-          <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0.25rem 0' }}>
-            Password: admin123
-          </p>
-        </div>
       </div>
     </div>
   );

@@ -7,6 +7,9 @@ interface AuthContextType extends AuthState {
   sendInvitation: (email: string) => void;
   acceptInvitation: (email: string, password: string) => Promise<boolean>;
   isEmailInvited: (email: string) => boolean;
+  makeUserAdmin: (userId: string) => void;
+  removeUserAdmin: (userId: string) => void;
+  getAllUsers: () => User[];
 }
 
 type AuthAction =
@@ -31,6 +34,7 @@ const defaultUsers: User[] = [
     email: 'admin@company.com',
     password: 'admin123',
     isInvited: true,
+    isAdmin: true,
     invitedAt: new Date(),
     lastLogin: new Date()
   }
@@ -161,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
         isInvited: true,
+        isAdmin: false, // New users are not admin by default
         invitedAt: new Date(),
         lastLogin: new Date()
       };
@@ -174,6 +179,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
+  const makeUserAdmin = (userId: string) => {
+    const users = getUsers();
+    const updatedUsers = users.map(u => 
+      u.id === userId ? { ...u, isAdmin: true } : u
+    );
+    saveUsers(updatedUsers);
+    
+    // Update current user if it's the same user
+    if (state.currentUser?.id === userId) {
+      dispatch({ type: 'LOGIN_SUCCESS', payload: { ...state.currentUser, isAdmin: true } });
+    }
+  };
+
+  const removeUserAdmin = (userId: string) => {
+    const users = getUsers();
+    const updatedUsers = users.map(u => 
+      u.id === userId ? { ...u, isAdmin: false } : u
+    );
+    saveUsers(updatedUsers);
+    
+    // Update current user if it's the same user
+    if (state.currentUser?.id === userId) {
+      dispatch({ type: 'LOGIN_SUCCESS', payload: { ...state.currentUser, isAdmin: false } });
+    }
+  };
+
+  const getAllUsers = (): User[] => {
+    return getUsers();
+  };
+
   const isEmailInvited = (email: string): boolean => {
     const users = getUsers();
     return state.pendingInvitations.includes(email) || users.some(u => u.email === email);
@@ -185,7 +220,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout,
     sendInvitation,
     acceptInvitation,
-    isEmailInvited
+    isEmailInvited,
+    makeUserAdmin,
+    removeUserAdmin,
+    getAllUsers
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -81,7 +81,7 @@ function AuthenticatedApp() {
                   {currentUser?.email}
                 </p>
                 <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                  {currentUser?.email === 'admin@company.com' ? 'Administrator' : 'Team Member'}
+                  {currentUser?.isAdmin ? 'Administrator' : 'Team Member'}
                 </p>
               </div>
             </div>
